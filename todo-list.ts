@@ -9,7 +9,7 @@ interface ITodoList {
   printTasksAmount(): void;
   printUncompletedTasks(): void;
   searchTask(title?: string, description?: string): Task[];
-  sortTasksByStatus(): void;
+  sortTasksByStatus(completed: boolean): void;
   sortTasksByCreation(increasing: boolean): void;
 }
 
@@ -17,14 +17,25 @@ export class TodoList implements ITodoList {
   constructor(public tasks: Task[]) {}
 
   addTask(task: Task): void {
-    if (this.tasks.includes(task)) console.log(`Couldn't add existing task`);
+    if (this.tasks.includes(task))
+      throw new Error(`Couldn't add existing task`);
     this.tasks.push(task);
   }
-  deleteTask(task: Task): void {
-    if (!this.tasks.includes(task))
+  deleteTask(task: Task, confirmation?: boolean): void {
+    if (!this.tasks.includes(task)) {
       console.log("Impossible to delete unexisting task");
+      return;
+    }
+    if (task.protectedTask && confirmation === undefined) {
+      throw new Error(`Couldn't delete protected task. Confirmation required`);
+    }
+    if (confirmation === false) {
+      console.log("Operation cancelled");
+      return;
+    }
     this.tasks.splice(this.tasks.indexOf(task), 1);
   }
+
   printTasks(): void {
     console.log(this.tasks);
   }
@@ -54,7 +65,7 @@ export class TodoList implements ITodoList {
 
     return foundTasks;
   }
-  sortTasksByStatus(completed: boolean = false): Task[] {
+  sortTasksByStatus(completed: boolean): Task[] {
     const foundTasks = this.tasks.filter(
       (task) => task.completed === completed
     );
@@ -67,6 +78,11 @@ export class TodoList implements ITodoList {
   }
 
   sortTasksByCreation(increasing: boolean): void {
-    throw new Error("Method not implemented.");
+    console.log(
+      this.tasks.slice().sort((a, b) => {
+        if (increasing) return a.initDate.getTime() - b.initDate.getTime();
+        return b.initDate.getTime() - a.initDate.getTime();
+      })
+    );
   }
 }
