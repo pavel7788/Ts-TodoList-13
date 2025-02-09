@@ -1,59 +1,57 @@
+import { nanoid } from 'nanoid'
+
 interface ITask {
+  id: string;
   title: string;
   description: string;
-  protectedTask?: boolean;
+  isProtected?: boolean;
   isCompleted: boolean;
   initDate: Date;
-  editedDate?: Date;
-  complete(): void;
-  editTask(newTitle?: string, newDescription?: string): void;
+  completeTask(): void;
   printTask(): void;
 }
 
+export interface IUpdateTask {
+  title?: string,
+  description?: string,
+  isProtected?: boolean,
+  isCompleted?: boolean
+}
+
 export class Task implements ITask {
-  private isCompleted: boolean = false;
+  private _id = nanoid();
+  private _isCompleted: boolean = false;
   readonly initDate: Date = new Date();
-  editedDate?: Date;
+  private editedDate?: Date;
 
   constructor(
-    public title: string,
-    public description: string,
-    readonly protectedTask?: boolean
+    public title: string = 'New Task',
+    public description: string = '',
+    readonly isProtected: boolean = false
   ) {
-    if (!this.title.trim() || !this.description.trim()) {
-      throw new Error("Task can't be empty");
-    }
+    // if (!this.title.trim() || !this.description.trim()) {
+    //   throw new Error("Task can't be empty");
+    // }
   }
 
-  get completed() {
-    return this.isCompleted;
+  get id(): string {
+    return this._id;
   }
 
-  complete(): void {
-    this.isCompleted = true;
+  set isCompleted(value: boolean) {
+    this._isCompleted = value;
   }
 
-  editTask(
-    newTitle?: string,
-    newDescription?: string,
-    confirmation?: boolean
-  ): void {
-    if (!newTitle && !newDescription) {
-      console.log(
-        "Impossible to edit task. Method should receive at least 1 argument"
-      );
-      return;
-    }
-    if (this.protectedTask && !confirmation) {
-      throw new Error(`Couldn't edit protected task. Confirmation required`);
-    }
-    if (confirmation === false) {
-      console.log("Operation cancelled");
-      return;
-    }
-    this.title = newTitle ?? this.title;
-    this.description = newDescription ?? this.description;
+  get isCompleted() {
+    return this._isCompleted;
+  }
+
+  updateDate(): void {
     this.editedDate = new Date();
+  }
+
+  completeTask(): void {
+    this._isCompleted = true;
   }
 
   printTask(): void {

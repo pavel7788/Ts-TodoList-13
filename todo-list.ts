@@ -1,88 +1,120 @@
-import { Task } from "./task";
+import { IUpdateTask, Task } from "./task";
 
 interface ITodoList {
   tasks: Task[];
   addTask(task: Task): void;
-  deleteTask(task: Task): void;
-  editTask(task: Task, newTitle?: string, newDescription?: string): void;
+  deleteTask(title: string, confirmation?: boolean): void;
+  editTask(
+    title: string,
+    body: IUpdateTask,
+    updateConfirmation?: boolean
+  ): void;
   printTasks(): void;
   printTasksAmount(): void;
   printUncompletedTasks(): void;
-  searchTask(title?: string, description?: string): Task[];
-  sortTasksByStatus(completed: boolean): void;
-  sortTasksByCreation(increasing: boolean): void;
+  searchTask(term: string, criteria: "title" | "description"): Task;
+  sortTasksByStatus(ascending: boolean): void;
+  sortTasksByCreation(ascending: boolean): void;
 }
 
 export class TodoList implements ITodoList {
-  constructor(public tasks: Task[]) {}
+  private _tasks: Task[] = [];
+
+  constructor() {}
+
+  get tasks() {
+    return this._tasks;
+  }
 
   addTask(task: Task): void {
-    if (this.tasks.includes(task))
+    const taskTitles = this.tasks.map((t) => t.title);
+    if (taskTitles.includes(task.title))
       throw new Error(`Couldn't add existing task`);
     this.tasks.push(task);
   }
-  deleteTask(task: Task, confirmation?: boolean): void {
-    if (!this.tasks.includes(task)) {
-      console.log("Impossible to delete unexisting task");
+
+  editTask(
+    title: string,
+    body: IUpdateTask,
+    updateConfirmation?: boolean
+  ): void {
+    if (Object.keys(body).length === 0) {
+      console.log("Body can't be empty");
+      return
+    }
+    const deleteBody = this.searchTask(title);
+    if (deleteBody.isProtected && !updateConfirmation) {
+      console.log("Can't update protected task");
       return;
     }
-    if (task.protectedTask && confirmation === undefined) {
-      throw new Error(`Couldn't delete protected task. Confirmation required`);
+
+    const updateBody = {
+      ...deleteBody,
+      ...body,
+      //editedDate: new Date(),
     }
-    if (confirmation === false) {
-      console.log("Operation cancelled");
-      return;
+    if (updateBody instanceof Task) {
+      updateBody.updateDate();
+      this._tasks.splice(this.tasks.indexOf(deleteBody), 1);
+      this._tasks.push(updateBody);
+    }    
+  }
+
+  deleteTask(title: string, confirmation?: boolean): void {
+    const task = this.searchTask(title);
+    if (task.isProtected) {
+      if (!confirmation || undefined) {
+        console.log("Can't delete protected task. Confirmation required");
+        return;
+      }
     }
     this.tasks.splice(this.tasks.indexOf(task), 1);
   }
 
   printTasks(): void {
-    console.log(this.tasks);
+    console.log(this._tasks);
   }
+
   printTasksAmount(): void {
-    console.log(this.tasks.length);
+    console.log(this._tasks.length);
   }
+
   printUncompletedTasks(): void {
-    this.tasks.forEach((task) => {
-      if (!task.completed) console.log(task);
-    });
-  }
-  searchTask(title?: string, description?: string): Task[] {
-    if (!title && !description) {
-      console.log("Task not found");
-      return [];
-    }
-
-    const foundTasks = this.tasks.filter((task) => {
-      const matchTitle = title ? task.title.includes(title) : true;
-      const matchDescription = description
-        ? task.description.includes(description)
-        : true;
-      return matchTitle && matchDescription;
-    });
-
-    if (foundTasks.length === 0) console.log("Task not found");
-
-    return foundTasks;
-  }
-  sortTasksByStatus(completed: boolean): Task[] {
-    const foundTasks = this.tasks.filter(
-      (task) => task.completed === completed
-    );
-
-    if (foundTasks.length === 0) {
-      console.log(`No ${completed ? "completed" : "uncompleted"} tasks found.`);
-    }
-
-    return foundTasks;
+    this._tasks.filter((t) => !t.isCompleted).forEach((u) => console.log(u));
+    // this.tasks.forEach((task) => {
+    //   if (!task.isCompleted) console.log(task);
+    // });
   }
 
-  sortTasksByCreation(increasing: boolean): void {
-    console.log(
-      this.tasks.slice().sort((a, b) => {
-        if (increasing) return a.initDate.getTime() - b.initDate.getTime();
-        return b.initDate.getTime() - a.initDate.getTime();
-      })
-    );
+  searchTask(term: string, criteria: "title" | "description" = "title"): Task {
+    let searchResult: Task | undefined;
+    if (criteria === "title")
+      searchResult = this.tasks.find((t) => t.title === term);
+
+    if (criteria === "description")
+      searchResult = this.tasks.find((t) => t.description === term);
+
+    if (searchResult === undefined) throw new Error("Task not found");
+
+    return searchResult as Task;
+  }
+
+  getTaskId(term: string, criteria: "title" | "description" = "title"): string {
+    const task = this.searchTask(term, criteria);
+    return task.id;
+  }
+
+  sortTasksByStatus(ascending: boolean = true): void {
+    if (ascending)
+      this._tasks.sort((a, b) => Number(a.isCompleted) - Number(b.isCompleted));
+    else
+      this._tasks.sort((a, b) => Number(b.isCompleted) - Number(a.isCompleted));
+  }
+
+  sortTasksByCreation(ascending: boolean = true): void {
+    if (ascending)
+      this._tasks.sort((a, b) => a.initDate.getTime() - b.initDate.getTime());
+    else
+      this._tasks.sort((a, b) => b.initDate.getTime() - a.initDate.getTime());
   }
 }
