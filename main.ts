@@ -9,10 +9,10 @@ const homework13 = new Task(
 // homework13.completeTask();
 // homework13.editTask(undefined, "Hand in this homework");
 // homework13.editTask("Homework finished!", undefined);
-// // homework13.printTask();
+// homework13.printTask();
 
 const ts_oop = new Task("Learn TypeScript", "Practice OOP concepts", true);
-// // ts_oop.printTask();
+// ts_oop.printTask();
 
 const todoList = new TodoList();
 todoList.addTask(homework13);
